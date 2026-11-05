@@ -4,8 +4,8 @@
 
 A batteries included DankMaterialShell (DMS) plugin that puts your AirPods in the bar and the Control Center - battery, noise modes and Conversation Awareness - powered by [LibrePods](https://github.com/kavishdevar/librepods) under the hood.
 
-- **Bar pill** - an earbuds icon with the lowest bud level; a ring highlight when Conversation Awareness is active. Click it to open the popout panel.
-- **Popout panel** - device name (with rename), per-bud + case battery rings, a four-way noise-control selector (Off / Transparency / Adaptive / Noise), and Conversation Awareness + Ear Detection rows.
+- **Bar pill** - a model-specific icon and battery level. It hides while disconnected and returns automatically after reconnecting. Click it to open the popout panel.
+- **Popout panel** - system Material controls, device name, battery status, and noise control. AirPods Max show a single headset battery indicator and three modes (Off / Transparency / ANC), with Automatic Head Detection. Earbuds show left/right/case batteries, Adaptive mode, Conversation Awareness and Ear Detection.
 - **Control Center tile** - click to cycle Noise ⇄ Transparency; click the empty area to reveal the full panel inline.
 
 ![Screenshot 1 (control center)](./assets/control-center.png)
@@ -70,6 +70,8 @@ quickshell -p "$dms-share" log | grep -i airpods
 ```
 
 The `pollInterval` (how often the bridge is polled for status) is configurable in the plugin's settings - default 5s.
+
+The noise-mode buttons use DMS's `qs.DCommon.Widgets.DButtonGroup`; colors, typography and corner radii follow the system theme.
 
 ### One quirk worth knowing: the Control Center *detail* has no plugin service
 

@@ -5,6 +5,7 @@ import qs.Common
 import qs.Widgets
 import qs.Services
 import qs.Modules.Plugins
+import qs.DCommon.Widgets as Material
 
 // AirPods widget for DankMaterialShell.
 //
@@ -13,6 +14,9 @@ import qs.Modules.Plugins
 // the bar pill, the popout and the Control Center tile.
 PluginComponent {
     id: root
+
+    // Keep polling while hidden so reconnecting brings the bar widget back.
+    visible: root.connected
 
     property var popoutService: null
 
@@ -53,6 +57,8 @@ PluginComponent {
     // Every field is a binding onto the shared blob → all instances stay in sync.
     readonly property bool connected: shared.connected === true
     readonly property string model: shared.model || "buds"   // "buds" | "headset"
+    readonly property bool isHeadset: model === "headset"
+    readonly property string deviceIcon: isHeadset ? "headphones" : "earbuds"
     readonly property int batLeft: shared.left !== undefined ? shared.left : -1
     readonly property int batRight: shared.right !== undefined ? shared.right : -1
     readonly property int batCase: shared.case !== undefined ? shared.case : -1
@@ -71,7 +77,7 @@ PluginComponent {
             "anc": { icon: "noise_control_on", label: "Noise Cancellation" },
             "unknown": { icon: "earbuds", label: "-" }
         })
-    readonly property var modeOrder: ["off", "transparency", "adaptive", "anc"]
+    readonly property var modeOrder: isHeadset ? ["off", "transparency", "anc"] : ["off", "transparency", "adaptive", "anc"]
 
     readonly property string modeLabel: (modeInfo[mode] || modeInfo["unknown"]).label
     readonly property string modeIcon: (modeInfo[mode] || modeInfo["unknown"]).icon
@@ -281,6 +287,7 @@ PluginComponent {
 
         property int level: -1               // 0..100, or -1 when unavailable
         property bool charging: false
+        property string centerIcon: ""
         property color ringColor: Theme.primary
         property color trackColor: Theme.withAlpha(Theme.surfaceText, 0.14)
 
@@ -348,8 +355,16 @@ PluginComponent {
                 color: ring.ringColor
             }
 
+            DankIcon {
+                visible: ring.centerIcon.length > 0 && !ring.charging
+                anchors.centerIn: parent
+                name: ring.centerIcon
+                size: ring.width * 0.4
+                color: ring.ringColor
+            }
+
             StyledText {
-                visible: !(ring.charging && ring.available)
+                visible: !ring.centerIcon && !(ring.charging && ring.available)
                 anchors.centerIn: parent
                 text: ring.available ? ring.level : "-"
                 font.pixelSize: Theme.fontSizeLarge
@@ -441,6 +456,7 @@ PluginComponent {
 
             Row {
                 anchors.left: parent.left
+                anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.rightMargin: Theme.spacingS
                 spacing: Theme.spacingM
@@ -448,16 +464,16 @@ PluginComponent {
                 Rectangle {
                     width: 46
                     height: 46
-                    radius: 14
-                    color: Theme.primary
+                    radius: Theme.cornerRadiusL
+                    color: Theme.primaryContainer
                     anchors.verticalCenter: parent.verticalCenter
 
                     DankIcon {
                         anchors.centerIn: parent
-                        name: "earbuds"
+                        name: panel.controller.deviceIcon
                         filled: true
                         size: Theme.iconSizeLarge - 6
-                        color: Theme.primaryText
+                        color: Theme.onPrimaryContainer
                     }
                 }
 
@@ -492,7 +508,7 @@ PluginComponent {
                         }
 
                         StyledText {
-                            text: panel.controller.connected ? "Connected · LibrePods" : "Disconnected"
+                            text: panel.controller.connected ? "Connected" : "Disconnected"
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
                         }
@@ -516,7 +532,7 @@ PluginComponent {
                 delegate: Rectangle {
                     width: (parent.width - Theme.spacingS * 2) / 3
                     height: 108
-                    radius: 16
+                    radius: Theme.cornerRadiusL
                     color: Theme.surfaceContainerHigh
 
                     Column {
@@ -546,27 +562,34 @@ PluginComponent {
                 active: panel.controller.model === "headset"
                 width: parent.width
                 sourceComponent: Rectangle {
-                    height: 108
-                    radius: 16
+                    id: headsetBattery
+                    readonly property int level: panel.controller.batHeadset
+                    readonly property bool available: level >= 0
+                    readonly property color accent: available && level <= 20 ? Theme.error : Theme.primary
+                    height: 104
+                    radius: Theme.cornerRadiusL
                     color: Theme.surfaceContainerHigh
 
                     Row {
-                        anchors.centerIn: parent
-                        spacing: Theme.spacingM
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.spacingL
 
                         BatteryRing {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 56
-                            height: 56
-                            level: panel.controller.batHeadset
+                            width: 64
+                            height: 64
+                            level: headsetBattery.level
+                            ringColor: headsetBattery.accent
+                            centerIcon: "headphones"
                         }
 
                         StyledText {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Headset"
-                            font.pixelSize: Theme.fontSizeMedium
-                            font.weight: Font.Medium
-                            color: Theme.surfaceText
+                            text: headsetBattery.available ? headsetBattery.level + "%" : "—"
+                            font.pixelSize: Theme.fontSizeDisplay
+                            font.weight: Font.Normal
+                            color: Theme.onSurface
                         }
                     }
                 }
@@ -579,69 +602,25 @@ PluginComponent {
             spacing: Theme.spacingS
 
             StyledText {
-                text: "NOISE CONTROL"
+                text: "Noise control"
                 font.pixelSize: Theme.fontSizeSmall
                 font.weight: Font.DemiBold
-                font.letterSpacing: 0.5
                 color: Theme.surfaceVariantText
             }
 
-            Rectangle {
+            Material.DButtonGroup {
                 width: parent.width
-                height: 68
-                radius: 18
-                color: Theme.surfaceContainerHigh
-
-                Row {
-                    anchors.fill: parent
-                    anchors.margins: 5
-                    spacing: 4
-
-                    Repeater {
-                        model: [
-                            { id: "off", icon: "block", label: "Off" },
-                            { id: "transparency", icon: "noise_aware", label: "Transparency" },
-                            { id: "adaptive", icon: "auto_mode", label: "Adaptive" },
-                            { id: "anc", icon: "noise_control_on", label: "ANC" }
-                        ]
-
-                        delegate: Rectangle {
-                            readonly property bool selected: panel.controller.mode === modelData.id
-                            width: (parent.width - 4 * 3) / 4
-                            height: parent.height
-                            radius: 14
-                            color: selected ? Theme.primaryContainer : (segArea.containsMouse && panel.controller.connected ? Theme.surfaceContainerHighest : "transparent")
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 3
-
-                                DankIcon {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    name: modelData.icon
-                                    filled: parent.parent.selected
-                                    size: Theme.iconSize - 2
-                                    color: parent.parent.selected ? Theme.primary : Theme.surfaceVariantText
-                                }
-
-                                StyledText {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: modelData.label
-                                    font.pixelSize: Theme.fontSizeSmall - 1
-                                    color: parent.parent.selected ? Theme.primary : Theme.surfaceVariantText
-                                }
-                            }
-
-                            MouseArea {
-                                id: segArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                enabled: panel.controller.connected
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: panel.controller.setNoise(modelData.id)
-                            }
-                        }
-                    }
+                fillWidth: true
+                size: "small"
+                checkEnabled: false
+                enabled: panel.controller.connected
+                model: panel.controller.modeOrder.map(function (mode) {
+                    return { text: mode === "anc" ? "ANC" : panel.controller.modeInfo[mode].label }
+                })
+                currentIndex: panel.controller.modeOrder.indexOf(panel.controller.mode)
+                onSelectionChanged: (index, selected) => {
+                    if (selected)
+                        panel.controller.setNoise(panel.controller.modeOrder[index])
                 }
             }
         }
@@ -652,6 +631,7 @@ PluginComponent {
             spacing: 0
 
             ToggleRow {
+                visible: !panel.controller.isHeadset
                 width: parent.width
                 icon: "record_voice_over"
                 title: "Conversation Awareness"
@@ -662,6 +642,7 @@ PluginComponent {
             }
 
             Rectangle {
+                visible: !panel.controller.isHeadset
                 width: parent.width - Theme.spacingS * 2
                 anchors.horizontalCenter: parent.horizontalCenter
                 height: 1
@@ -672,8 +653,8 @@ PluginComponent {
             ToggleRow {
                 width: parent.width
                 icon: "hearing"
-                title: "Automatic Ear Detection"
-                subtitle: "Pause audio when a bud is removed"
+                title: panel.controller.isHeadset ? "Automatic Head Detection" : "Automatic Ear Detection"
+                subtitle: panel.controller.isHeadset ? "Pause audio when you take off your headphones" : "Pause audio when a bud is removed"
                 checked: panel.controller.earDetection
                 onToggled: value => panel.controller.setEarDetection(value)
             }
@@ -713,7 +694,7 @@ PluginComponent {
 
                 DankIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    name: "earbuds"
+                    name: root.deviceIcon
                     filled: root.connected
                     size: root.iconSize
                     color: root.connected ? Theme.primary : Theme.surfaceVariantText
@@ -746,7 +727,7 @@ PluginComponent {
 
                 DankIcon {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    name: "earbuds"
+                    name: root.deviceIcon
                     filled: root.connected
                     size: root.iconSize
                     color: root.connected ? Theme.primary : Theme.surfaceVariantText
@@ -765,7 +746,7 @@ PluginComponent {
     }
 
     // ---- Control Center tile ----------------------------------------------
-    ccWidgetIcon: "earbuds"
+    ccWidgetIcon: root.deviceIcon
     ccWidgetPrimaryText: root.deviceName
     ccWidgetSecondaryText: root.connected ? (root.modeLabel + (root.lowestLevel >= 0 ? " · " + root.lowestLevel + "%" : "")) : "Disconnected"
     ccWidgetIsActive: root.connected && root.mode !== "off"

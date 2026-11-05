@@ -428,7 +428,7 @@ PluginComponent {
             }
         }
 
-        DankToggle {
+        Material.DToggle {
             id: toggle
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
@@ -452,6 +452,7 @@ PluginComponent {
 
         // ---- header --------------------------------------------------------
         Item {
+            visible: !panel.controller.isHeadset
             width: parent.width
             height: 48
 
@@ -548,91 +549,132 @@ PluginComponent {
                     id: headsetBattery
                     readonly property int level: panel.controller.batHeadset
                     readonly property bool available: level >= 0
-                    readonly property color accent: available && level <= 20 ? Theme.error : Theme.primary
-                    height: 144
+                    readonly property bool low: available && level <= 20
+                    height: 132
                     radius: Theme.cornerRadiusL
                     color: Theme.surfaceContainerHigh
 
+                    Column {
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.spacingM
+                        anchors.right: chargeBadge.left
+                        anchors.rightMargin: Theme.spacingM
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.spacingS
+
+                        DankIcon {
+                            name: "headphones"
+                            size: Theme.iconSizeLarge
+                            color: Theme.primary
+                        }
+
+                        StyledText {
+                            width: parent.width
+                            text: panel.controller.deviceName
+                            font.pixelSize: Theme.fontSizeLarge
+                            font.weight: Font.Medium
+                            color: Theme.onSurface
+                            wrapMode: Text.WordWrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                        }
+                    }
+
                     Material.DMaterialShape {
-                        anchors.centerIn: parent
-                        width: 120
-                        height: 120
+                        id: chargeBadge
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.spacingM
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 88
+                        height: 88
                         shape: "cookie12"
-                        color: headsetBattery.accent
+                        color: headsetBattery.low ? Theme.errorContainer : Theme.primaryContainer
                         fillProgress: 1
 
                         StyledText {
                             anchors.centerIn: parent
                             text: headsetBattery.available ? headsetBattery.level + "%" : "—"
-                            font.pixelSize: Theme.fontSizeXXLarge
+                            font.pixelSize: Theme.fontSizeXLarge
                             font.weight: Font.Medium
-                            color: headsetBattery.available && headsetBattery.level <= 20 ? Theme.onError : Theme.onPrimary
+                            color: headsetBattery.low ? Theme.onErrorContainer : Theme.onPrimaryContainer
                         }
                     }
                 }
             }
         }
 
-        // ---- noise control -------------------------------------------------
-        Column {
+        // ---- controls ------------------------------------------------------
+        Rectangle {
             width: parent.width
-            spacing: Theme.spacingS
+            height: controls.implicitHeight + Theme.spacingM * 2
+            radius: Theme.cornerRadiusL
+            color: Theme.surfaceContainerHigh
 
-            StyledText {
-                text: "Noise control"
-                font.pixelSize: Theme.fontSizeSmall
-                font.weight: Font.DemiBold
-                color: Theme.surfaceVariantText
-            }
+            Column {
+                id: controls
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: Theme.spacingM
+                spacing: Theme.spacingM
 
-            Material.DButtonGroup {
-                width: parent.width
-                fillWidth: true
-                size: "small"
-                checkEnabled: false
-                enabled: panel.controller.connected
-                model: panel.controller.modeOrder.map(function (mode) {
-                    return { text: mode === "anc" ? "ANC" : panel.controller.modeInfo[mode].label }
-                })
-                currentIndex: panel.controller.modeOrder.indexOf(panel.controller.mode)
-                onSelectionChanged: (index, selected) => {
-                    if (selected)
-                        panel.controller.setNoise(panel.controller.modeOrder[index])
+                Column {
+                    width: parent.width
+                    spacing: Theme.spacingS
+
+                    StyledText {
+                        text: "Noise control"
+                        font.pixelSize: Theme.fontSizeMedium
+                        font.weight: Font.Medium
+                        color: Theme.onSurfaceVariant
+                    }
+
+                    Material.DButtonGroup {
+                        width: parent.width
+                        fillWidth: true
+                        size: "small"
+                        checkEnabled: false
+                        selectedColor: Theme.secondaryContainer
+                        selectedContentColor: Theme.onSecondaryContainer
+                        unselectedColor: Theme.surfaceContainerHighest
+                        unselectedContentColor: Theme.onSurfaceVariant
+                        enabled: panel.controller.connected
+                        model: panel.controller.modeOrder.map(function (mode) {
+                            return { text: mode === "anc" ? "ANC" : panel.controller.modeInfo[mode].label }
+                        })
+                        currentIndex: panel.controller.modeOrder.indexOf(panel.controller.mode)
+                        onSelectionChanged: (index, selected) => {
+                            if (selected)
+                                panel.controller.setNoise(panel.controller.modeOrder[index])
+                        }
+                    }
                 }
-            }
-        }
 
-        // ---- toggles -------------------------------------------------------
-        Column {
-            width: parent.width
-            spacing: 0
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Theme.outlineVariant
+                }
 
-            ToggleRow {
-                visible: !panel.controller.isHeadset
-                width: parent.width
-                icon: "record_voice_over"
-                title: "Conversation Awareness"
-                subtitle: "Lowers volume when you speak · set in LibrePods"
-                checked: panel.controller.conversation
-                enabled: panel.controller.connected
-                onToggled: panel.controller.conversationInfo()
-            }
+                ToggleRow {
+                    visible: !panel.controller.isHeadset
+                    width: parent.width
+                    icon: "record_voice_over"
+                    title: "Conversation Awareness"
+                    subtitle: "Lowers volume when you speak · set in LibrePods"
+                    checked: panel.controller.conversation
+                    enabled: panel.controller.connected
+                    onToggled: panel.controller.conversationInfo()
+                }
 
-            Rectangle {
-                visible: !panel.controller.isHeadset
-                width: parent.width - Theme.spacingS * 2
-                anchors.horizontalCenter: parent.horizontalCenter
-                height: 1
-                color: Theme.outline
-                opacity: 0.5
-            }
-
-            ToggleRow {
-                width: parent.width
-                icon: "hearing"
-                title: panel.controller.isHeadset ? "Automatic Head Detection" : "Automatic Ear Detection"
-                checked: panel.controller.earDetection
-                onToggled: value => panel.controller.setEarDetection(value)
+                ToggleRow {
+                    width: parent.width
+                    icon: panel.controller.isHeadset ? "sensors" : "hearing"
+                    title: panel.controller.isHeadset ? "Head detection" : "Ear detection"
+                    checked: panel.controller.earDetection
+                    enabled: panel.controller.connected
+                    onToggled: value => panel.controller.setEarDetection(value)
+                }
             }
         }
     }

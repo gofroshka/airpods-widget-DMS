@@ -554,35 +554,19 @@ PluginComponent {
                     color: Theme.surfaceContainerHigh
 
                     Material.DMaterialShape {
-                        id: batteryCookie
                         anchors.centerIn: parent
                         width: 120
                         height: 120
                         shape: "cookie12"
                         color: headsetBattery.accent
-                        trackColor: Theme.surfaceContainerHighest
-                        fillProgress: headsetBattery.available ? Math.max(0, Math.min(100, headsetBattery.level)) / 100 : 0
-
-                        Behavior on fillProgress {
-                            NumberAnimation {
-                                duration: Theme.shortDuration
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-
-                        Material.DMaterialShape {
-                            anchors.fill: parent
-                            anchors.margins: 6
-                            shape: batteryCookie.shape
-                            color: Theme.surfaceContainerHigh
-                        }
+                        fillProgress: 1
 
                         StyledText {
                             anchors.centerIn: parent
                             text: headsetBattery.available ? headsetBattery.level + "%" : "—"
                             font.pixelSize: Theme.fontSizeXXLarge
                             font.weight: Font.Medium
-                            color: Theme.onSurface
+                            color: headsetBattery.available && headsetBattery.level <= 20 ? Theme.onError : Theme.onPrimary
                         }
                     }
                 }

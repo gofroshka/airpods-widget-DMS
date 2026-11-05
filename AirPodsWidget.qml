@@ -419,6 +419,7 @@ PluginComponent {
 
                 StyledText {
                     text: rowItem.subtitle
+                    visible: text.length > 0
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                     elide: Text.ElideRight
@@ -495,24 +496,6 @@ PluginComponent {
                         }
                     }
 
-                    Row {
-                        spacing: Theme.spacingXS
-                        visible: !panel.renaming
-
-                        Rectangle {
-                            width: 7
-                            height: 7
-                            radius: 3.5
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: panel.controller.connected ? Theme.success : Theme.surfaceVariantText
-                        }
-
-                        StyledText {
-                            text: panel.controller.connected ? "Connected" : "Disconnected"
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceVariantText
-                        }
-                    }
                 }
             }
         }
@@ -566,29 +549,39 @@ PluginComponent {
                     readonly property int level: panel.controller.batHeadset
                     readonly property bool available: level >= 0
                     readonly property color accent: available && level <= 20 ? Theme.error : Theme.primary
-                    height: 104
+                    height: 144
                     radius: Theme.cornerRadiusL
                     color: Theme.surfaceContainerHigh
 
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: Theme.spacingL
+                    Material.DMaterialShape {
+                        id: batteryCookie
+                        anchors.centerIn: parent
+                        width: 120
+                        height: 120
+                        shape: "cookie12"
+                        color: headsetBattery.accent
+                        trackColor: Theme.surfaceContainerHighest
+                        fillProgress: headsetBattery.available ? Math.max(0, Math.min(100, headsetBattery.level)) / 100 : 0
 
-                        BatteryRing {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 64
-                            height: 64
-                            level: headsetBattery.level
-                            ringColor: headsetBattery.accent
-                            centerIcon: "headphones"
+                        Behavior on fillProgress {
+                            NumberAnimation {
+                                duration: Theme.shortDuration
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
+                        Material.DMaterialShape {
+                            anchors.fill: parent
+                            anchors.margins: 6
+                            shape: batteryCookie.shape
+                            color: Theme.surfaceContainerHigh
                         }
 
                         StyledText {
-                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.centerIn: parent
                             text: headsetBattery.available ? headsetBattery.level + "%" : "—"
-                            font.pixelSize: Theme.fontSizeDisplay
-                            font.weight: Font.Normal
+                            font.pixelSize: Theme.fontSizeXXLarge
+                            font.weight: Font.Medium
                             color: Theme.onSurface
                         }
                     }
@@ -654,7 +647,6 @@ PluginComponent {
                 width: parent.width
                 icon: "hearing"
                 title: panel.controller.isHeadset ? "Automatic Head Detection" : "Automatic Ear Detection"
-                subtitle: panel.controller.isHeadset ? "Pause audio when you take off your headphones" : "Pause audio when a bud is removed"
                 checked: panel.controller.earDetection
                 onToggled: value => panel.controller.setEarDetection(value)
             }

@@ -71,7 +71,7 @@ quickshell -p "$dms-share" log | grep -i airpods
 
 The `pollInterval` (how often the bridge is polled for status) is configurable in the plugin's settings - default 5s.
 
-The noise-mode buttons use DMS's `qs.DCommon.Widgets.DButtonGroup`; colors, typography and corner radii follow the system theme.
+The noise-mode buttons use DMS's `qs.DCommon.Widgets.DButtonGroup`; colors, typography and corner radii follow the system theme. AirPods Max battery uses the native `DMaterialShape` cookie outline, filled to the current charge level, with the percentage in its center.
 
 ### One quirk worth knowing: the Control Center *detail* has no plugin service
 

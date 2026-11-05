@@ -4,7 +4,7 @@
     "category": "utilities",
     "description": "AirPods control center, powered by LibrePods.",
     "repo": "https://github.com/gofroshka/airpods-widget-DMS",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "author": "demic-dev",
     "type": "widget",
     "capabilities": ["dankbar-widget", "control-center"],

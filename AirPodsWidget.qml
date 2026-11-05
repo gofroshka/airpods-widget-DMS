@@ -591,6 +591,42 @@ PluginComponent {
                         color: headsetBattery.low ? Theme.errorContainer : Theme.primaryContainer
                         fillProgress: 1
 
+                        Shape {
+                            id: chargeOutline
+                            anchors.fill: parent
+                            anchors.margins: 2
+                            preferredRendererType: Shape.CurveRenderer
+
+                            property real progress: headsetBattery.available ? Math.max(0, Math.min(100, headsetBattery.level)) / 100 : 0
+                            readonly property string outlinePath: chargeBadge.buildPath(chargeBadge.shape, width, height)
+                            readonly property color accent: headsetBattery.low ? Theme.error : Theme.primary
+
+                            Behavior on progress {
+                                NumberAnimation {
+                                    duration: Theme.shortDuration
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
+
+                            ShapePath {
+                                fillColor: "transparent"
+                                strokeColor: Theme.withAlpha(chargeOutline.accent, 0.18)
+                                strokeWidth: 3
+                                PathSvg { path: chargeOutline.outlinePath }
+                            }
+
+                            ShapePath {
+                                fillColor: "transparent"
+                                strokeColor: chargeOutline.progress > 0 ? chargeOutline.accent : "transparent"
+                                strokeWidth: 3
+                                capStyle: ShapePath.RoundCap
+                                joinStyle: ShapePath.RoundJoin
+                                trim.start: 0
+                                trim.end: chargeOutline.progress
+                                PathSvg { path: chargeOutline.outlinePath }
+                            }
+                        }
+
                         StyledText {
                             anchors.centerIn: parent
                             text: headsetBattery.available ? headsetBattery.level + "%" : "—"

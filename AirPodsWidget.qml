@@ -374,6 +374,84 @@ PluginComponent {
         }
     }
 
+    // Expressive progress: a wavy charge arc and a smooth remaining track.
+    component WavyBattery: Item {
+        id: indicator
+
+        property int level: -1
+        property color accent: Theme.primary
+        property real progress: level >= 0 ? Math.max(0, Math.min(100, level)) / 100 : 0
+        readonly property real stroke: 5
+        readonly property real amplitude: 2.5
+        readonly property real radius: Math.min(width, height) / 2 - stroke / 2 - amplitude - 1
+        readonly property real gap: Math.min(8, progress * 90, (1 - progress) * 90)
+        readonly property real activeSweep: Math.max(0, progress * 360 - gap * 2)
+        readonly property real remainingSweep: Math.max(0, (1 - progress) * 360 - gap * 2)
+        readonly property string wavePath: {
+            if (progress <= 0)
+                return ""
+            var steps = Math.max(2, Math.ceil(activeSweep / 2))
+            var waves = Math.max(1, Math.round(progress * 12))
+            var path = []
+            for (var i = 0; i <= steps; i++) {
+                var t = i / steps
+                var angle = (-90 + gap + activeSweep * t) * Math.PI / 180
+                var r = radius + amplitude * Math.sin(t * waves * Math.PI * 2)
+                var x = width / 2 + Math.cos(angle) * r
+                var y = height / 2 + Math.sin(angle) * r
+                path.push((i === 0 ? "M" : "L") + x.toFixed(3) + " " + y.toFixed(3))
+            }
+            return path.join(" ") + (progress >= 1 ? " Z" : "")
+        }
+
+        implicitWidth: 88
+        implicitHeight: 88
+
+        Behavior on progress {
+            NumberAnimation {
+                duration: Theme.shortDuration
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Shape {
+            anchors.fill: parent
+            preferredRendererType: Shape.CurveRenderer
+
+            ShapePath {
+                fillColor: "transparent"
+                strokeColor: indicator.remainingSweep > 0 ? Theme.withAlpha(indicator.accent, 0.2) : "transparent"
+                strokeWidth: indicator.stroke
+                capStyle: ShapePath.RoundCap
+                PathAngleArc {
+                    centerX: indicator.width / 2
+                    centerY: indicator.height / 2
+                    radiusX: indicator.radius
+                    radiusY: indicator.radius
+                    startAngle: -90 + indicator.progress * 360 + indicator.gap
+                    sweepAngle: indicator.remainingSweep
+                }
+            }
+
+            ShapePath {
+                fillColor: "transparent"
+                strokeColor: indicator.progress > 0 ? indicator.accent : "transparent"
+                strokeWidth: indicator.stroke
+                capStyle: ShapePath.RoundCap
+                joinStyle: ShapePath.RoundJoin
+                PathSvg { path: indicator.wavePath }
+            }
+        }
+
+        StyledText {
+            anchors.centerIn: parent
+            text: indicator.level >= 0 ? indicator.level + "%" : "—"
+            font.pixelSize: Theme.fontSizeXLarge
+            font.weight: Font.Medium
+            color: Theme.onSurface
+        }
+    }
+
     // A settings-style row: leading icon, title + subtitle, trailing switch.
     component ToggleRow: Item {
         id: rowItem
@@ -580,60 +658,15 @@ PluginComponent {
                         }
                     }
 
-                    Material.DMaterialShape {
+                    WavyBattery {
                         id: chargeBadge
                         anchors.right: parent.right
                         anchors.rightMargin: Theme.spacingM
                         anchors.verticalCenter: parent.verticalCenter
                         width: 88
                         height: 88
-                        shape: "cookie12"
-                        color: headsetBattery.low ? Theme.errorContainer : Theme.primaryContainer
-                        fillProgress: 1
-
-                        Shape {
-                            id: chargeOutline
-                            anchors.fill: parent
-                            anchors.margins: 2
-                            preferredRendererType: Shape.CurveRenderer
-
-                            property real progress: headsetBattery.available ? Math.max(0, Math.min(100, headsetBattery.level)) / 100 : 0
-                            readonly property string outlinePath: chargeBadge.buildPath(chargeBadge.shape, width, height)
-                            readonly property color accent: headsetBattery.low ? Theme.error : Theme.primary
-
-                            Behavior on progress {
-                                NumberAnimation {
-                                    duration: Theme.shortDuration
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-
-                            ShapePath {
-                                fillColor: "transparent"
-                                strokeColor: Theme.withAlpha(chargeOutline.accent, 0.18)
-                                strokeWidth: 3
-                                PathSvg { path: chargeOutline.outlinePath }
-                            }
-
-                            ShapePath {
-                                fillColor: "transparent"
-                                strokeColor: chargeOutline.progress > 0 ? chargeOutline.accent : "transparent"
-                                strokeWidth: 3
-                                capStyle: ShapePath.RoundCap
-                                joinStyle: ShapePath.RoundJoin
-                                trim.start: 0
-                                trim.end: chargeOutline.progress
-                                PathSvg { path: chargeOutline.outlinePath }
-                            }
-                        }
-
-                        StyledText {
-                            anchors.centerIn: parent
-                            text: headsetBattery.available ? headsetBattery.level + "%" : "—"
-                            font.pixelSize: Theme.fontSizeXLarge
-                            font.weight: Font.Medium
-                            color: headsetBattery.low ? Theme.onErrorContainer : Theme.onPrimaryContainer
-                        }
+                        level: headsetBattery.level
+                        accent: headsetBattery.low ? Theme.error : Theme.primary
                     }
                 }
             }

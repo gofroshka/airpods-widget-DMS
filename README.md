@@ -32,7 +32,6 @@ LibrePods has no public API, so the plugin shells out to [`scripts/librepods-bri
 
 ## Requirements
 
-- Qt 6.10 or newer (for the cookie's path-trim progress outline).
 - `librepods-ctl` and `dbus-send` on `PATH` (the plugin's startup check enforces this).
 - The LibrePods daemon running with your AirPods paired.
 
@@ -72,7 +71,7 @@ quickshell -p "$dms-share" log | grep -i airpods
 
 The `pollInterval` (how often the bridge is polled for status) is configurable in the plugin's settings - default 5s.
 
-The noise-mode buttons and detection switch use DMS's native Material components; colors, typography and corner radii follow the system theme. For AirPods Max, a compact device card pairs the name with a solid `DMaterialShape` cookie showing the battery percentage. An accent outline follows the cookie contour clockwise from the top, showing the charge level. Noise control and head detection share a separate settings card. Low battery uses the theme's error-container color.
+The noise-mode buttons and detection switch use DMS's native Material components; colors, typography and corner radii follow the system theme. For AirPods Max, a compact device card pairs the name with an expressive battery indicator: a wavy accent arc for the charge, a smooth muted arc for the remainder, and the percentage in the center. Noise control and head detection share a separate settings card. Low battery uses the theme's error color.
 
 ### One quirk worth knowing: the Control Center *detail* has no plugin service
 
